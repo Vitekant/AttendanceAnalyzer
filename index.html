@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Building Attendance Log Analyzer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .drop-zone {
+            border: 3px dashed #4facfe;
+            border-radius: 12px;
+            padding: 60px 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+            background: #f8faff;
+            cursor: pointer;
+            margin-bottom: 30px;
+        }
+
+        .drop-zone:hover,
+        .drop-zone.dragover {
+            border-color: #00f2fe;
+            background: #f0f8ff;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(79, 172, 254, 0.2);
+        }
+
+        .drop-zone i {
+            font-size: 4em;
+            color: #4facfe;
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        .drop-zone h3 {
+            font-size: 1.5em;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .drop-zone p {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .options {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .options h4 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .option-group {
+            margin-bottom: 15px;
+        }
+
+        .option-group label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            padding: 8px 0;
+        }
+
+        .option-group input[type="radio"] {
+            margin-right: 10px;
+        }
+
+        .processing {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4facfe;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .results {
+            display: none;
+        }
+
+        .summary-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .summary-table th,
+        .summary-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        .summary-table th {
+            background: #4facfe;
+            color: white;
+            font-weight: 600;
+        }
+
+        .summary-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .download-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px 5px;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .reset-btn {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px 5px;
+        }
+
+        .reset-btn:hover {
+            background: #5a6268;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Attendance Analyzer</h1>
+            <p>Drop your attendance log file and get instant reports</p>
+        </div>
+
+        <div class="content">
+            <div id="upload-section">
+                <div class="drop-zone" id="dropZone">
+                    <i>📁</i>
+                    <h3>Drop your attendance log file here</h3>
+                    <p>or click to browse (supports .txt, .csv, .tsv files)</p>
+                </div>
+                <input type="file" id="fileInput" class="file-input" accept=".txt,.csv,.tsv">
+
+                <div class="options">
+                    <h4>What to do when someone only checked in once that day?</h4>
+                    <div class="option-group">
+                        <label>
+                            <input type="radio" name="singleEntry" value="exclude" checked>
+                            Don't count those days in the report
+                        </label>
+                    </div>
+                    <div class="option-group">
+                        <label>
+                            <input type="radio" name="singleEntry" value="assume8">
+                            Count those days as 8 hours worked
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="processing" id="processing">
+                <div class="spinner"></div>
+                <p>Processing your attendance data...</p>
+            </div>
+
+            <div class="results" id="results">
+                <h3>📈 Analysis Results</h3>
+                
+                <div class="options">
+                    <h4>What to do when someone only checked in once that day?</h4>
+                    <div class="option-group">
+                        <label>
+                            <input type="radio" name="resultsSingleEntry" value="exclude" checked>
+                            Don't count those days in the report
+                        </label>
+                    </div>
+                    <div class="option-group">
+                        <label>
+                            <input type="radio" name="resultsSingleEntry" value="assume8">
+                            Count those days as 8 hours worked
+                        </label>
+                    </div>
+                </div>
+                
+                <div id="summaryContainer"></div>
+                <div style="text-align: center; margin-top: 30px;">
+                    <button class="download-btn" id="downloadBtn">Download Report</button>
+                    <button class="reset-btn" id="resetBtn">Analyze Another File</button>
+                </div>
+            </div>
+
+            <div id="errorContainer"></div>
+        </div>
+    </div>
+
+    <script>
+        let processedData = null;
+
+        // File handling
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const processing = document.getElementById('processing');
+        const results = document.getElementById('results');
+        const uploadSection = document.getElementById('upload-section');
+        const errorContainer = document.getElementById('errorContainer');
+
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('dragover', handleDragOver);
+        dropZone.addEventListener('drop', handleDrop);
+        fileInput.addEventListener('change', handleFileSelect);
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                processFile(files[0]);
+            }
+        }
+
+        function handleFileSelect(e) {
+            if (e.target.files.length > 0) {
+                processFile(e.target.files[0]);
+            }
+        }
+
+        function showError(message) {
+            errorContainer.innerHTML = `<div class="error">${message}</div>`;
+        }
+
+        function clearError() {
+            errorContainer.innerHTML = '';
+        }
+
+        function processFile(file) {
+            clearError();
+            uploadSection.style.display = 'none';
+            processing.style.display = 'block';
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const content = e.target.result;
+                    const data = parseAttendanceData(content);
+                    processedData = analyzeAttendance(data);
+                    displayResults();
+                } catch (error) {
+                    showError(`Error processing file: ${error.message}`);
+                    resetView();
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function parseAttendanceData(content) {
+            const lines = content.trim().split('\n');
+            const data = [];
+            
+            // Skip header line
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+                
+                // Handle tab-separated values - split by tab first, then by spaces if needed
+                let parts = line.split('\t').filter(part => part.trim() !== '');
+                
+                // If we don't have enough parts with tabs, try splitting by multiple spaces
+                if (parts.length < 4) {
+                    parts = line.split(/\s+/).filter(part => part.trim() !== '');
+                }
+                
+                if (parts.length >= 4) {
+                    const id = parts[0];
+                    const name = parts[1];
+                    const department = parts[2];
+                    
+                    // The datetime might be in parts[3] as "DD-MM-YYYY HH:MM:SS"
+                    // or split across parts[3] and parts[4]
+                    let dateTimeStr = parts[3];
+                    if (parts.length > 4 && parts[4]) {
+                        dateTimeStr += ' ' + parts[4];
+                    }
+                    
+                    // Parse date and time - expect format like "07-01-2025     07:03:49"
+                    const dateTimeMatch = dateTimeStr.match(/(\d{2}-\d{2}-\d{4})\s+(\d{2}:\d{2}:\d{2})/);
+                    
+                    if (dateTimeMatch) {
+                        const datePart = dateTimeMatch[1]; // "07-01-2025"
+                        const timePart = dateTimeMatch[2]; // "07:03:49"
+                        
+                        const [day, month, year] = datePart.split('-').map(Number);
+                        const [hour, minute, second] = timePart.split(':').map(Number);
+                        
+                        if (day && month && year && hour !== undefined && minute !== undefined && second !== undefined) {
+                            const fullDate = new Date(year, month - 1, day, hour, minute, second);
+                            
+                            data.push({
+                                id: parseInt(id) || 0,
+                                name: name,
+                                department: department,
+                                datetime: fullDate,
+                                date: `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`
+                            });
+                        }
+                    }
+                }
+            }
+            
+            if (data.length === 0) {
+                throw new Error('No valid data found in file. Please check that your file has the correct format with columns: ID, Name, Department, Date Time, Device ID');
+            }
+            
+            return data;
+        }
+
+        function analyzeAttendance(data) {
+            const userStats = {};
+            
+            // Group by user and date
+            const userDays = {};
+            
+            data.forEach(entry => {
+                const key = `${entry.name}_${entry.date}`;
+                if (!userDays[key]) {
+                    userDays[key] = {
+                        name: entry.name,
+                        date: entry.date,
+                        entries: []
+                    };
+                }
+                userDays[key].entries.push(entry);
+            });
+            
+            // Calculate daily working hours
+            Object.values(userDays).forEach(dayData => {
+                if (!userStats[dayData.name]) {
+                    userStats[dayData.name] = {
+                        name: dayData.name,
+                        totalHours_exclude: 0,
+                        totalHours_assume8: 0,
+                        daysWorked_exclude: 0,
+                        daysWorked_assume8: 0,
+                        dailyHours: []
+                    };
+                }
+                
+                const entries = dayData.entries.sort((a, b) => a.datetime - b.datetime);
+                const user = userStats[dayData.name];
+                
+                if (entries.length === 1) {
+                    // Single entry - handle according to option
+                    user.totalHours_assume8 += 8;
+                    user.daysWorked_assume8++;
+                    user.dailyHours.push({ date: dayData.date, hours: 8, type: 'assumed' });
+                } else if (entries.length >= 2) {
+                    // Multiple entries - calculate time difference
+                    const firstEntry = entries[0];
+                    const lastEntry = entries[entries.length - 1];
+                    const diffMs = lastEntry.datetime - firstEntry.datetime;
+                    const hours = diffMs / (1000 * 60 * 60);
+                    
+                    user.totalHours_exclude += hours;
+                    user.totalHours_assume8 += hours;
+                    user.daysWorked_exclude++;
+                    user.daysWorked_assume8++;
+                    user.dailyHours.push({ date: dayData.date, hours: hours, type: 'calculated' });
+                }
+            });
+            
+            // Calculate averages
+            Object.values(userStats).forEach(user => {
+                user.avgHours_exclude = user.daysWorked_exclude > 0 ? user.totalHours_exclude / user.daysWorked_exclude : 0;
+                user.avgHours_assume8 = user.daysWorked_assume8 > 0 ? user.totalHours_assume8 / user.daysWorked_assume8 : 0;
+            });
+            
+            return userStats;
+        }
+
+        function displayResults() {
+            processing.style.display = 'none';
+            results.style.display = 'block';
+            
+            // Copy the selected option to the results radio buttons
+            const initialOption = document.querySelector('input[name="singleEntry"]:checked').value;
+            document.querySelector(`input[name="resultsSingleEntry"][value="${initialOption}"]`).checked = true;
+            
+            // Update the display
+            updateResultsDisplay();
+            
+            // Add event listeners to results radio buttons
+            document.querySelectorAll('input[name="resultsSingleEntry"]').forEach(radio => {
+                radio.addEventListener('change', updateResultsDisplay);
+            });
+        }
+
+        function updateResultsDisplay() {
+            const container = document.getElementById('summaryContainer');
+            const selectedOption = document.querySelector('input[name="resultsSingleEntry"]:checked').value;
+            
+            // Show the selected approach
+            const table = createSummaryTable(processedData, selectedOption);
+            const title = selectedOption === 'exclude' ? 
+                'Results: Not counting single check-ins' : 
+                'Results: Counting single check-ins as 8 hours';
+            
+            container.innerHTML = `
+                <h4>${title}</h4>
+                ${table}
+            `;
+        }
+
+        function formatHoursToHHMM(hours) {
+            const totalMinutes = Math.round(hours * 60);
+            const h = Math.floor(totalMinutes / 60);
+            const m = totalMinutes % 60;
+            return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+        }
+
+        function createSummaryTable(data, type) {
+            const users = Object.values(data).sort((a, b) => a.name.localeCompare(b.name));
+            
+            let tableHTML = `
+                <table class="summary-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Days Worked</th>
+                            <th>Total Hours</th>
+                            <th>Average Hours/Day</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            users.forEach(user => {
+                const totalHours = type === 'exclude' ? user.totalHours_exclude : user.totalHours_assume8;
+                const daysWorked = type === 'exclude' ? user.daysWorked_exclude : user.daysWorked_assume8;
+                const avgHours = type === 'exclude' ? user.avgHours_exclude : user.avgHours_assume8;
+                
+                tableHTML += `
+                    <tr>
+                        <td>${user.name}</td>
+                        <td>${daysWorked}</td>
+                        <td>${formatHoursToHHMM(totalHours)}</td>
+                        <td>${formatHoursToHHMM(avgHours)}</td>
+                    </tr>
+                `;
+            });
+            
+            tableHTML += '</tbody></table>';
+            return tableHTML;
+        }
+
+        function generateCSV(type) {
+            const users = Object.values(processedData).sort((a, b) => a.name.localeCompare(b.name));
+            
+            let csv = 'Name,Days Worked,Total Hours,Average Hours per Day\n';
+            
+            users.forEach(user => {
+                const totalHours = type === 'exclude' ? user.totalHours_exclude : user.totalHours_assume8;
+                const daysWorked = type === 'exclude' ? user.daysWorked_exclude : user.daysWorked_assume8;
+                const avgHours = type === 'exclude' ? user.avgHours_exclude : user.avgHours_assume8;
+                
+                csv += `${user.name},${daysWorked},${formatHoursToHHMM(totalHours)},${formatHoursToHHMM(avgHours)}\n`;
+            });
+            
+            return csv;
+        }
+
+        function downloadCurrentReport() {
+            const selectedOption = document.querySelector('input[name="singleEntry"]:checked').value;
+            const csv = generateCSV(selectedOption);
+            const filename = selectedOption === 'exclude' ? 
+                'attendance_report_skip_single_checkins.csv' : 
+                'attendance_report_count_single_as_8_hours.csv';
+            downloadCSV(csv, filename);
+        }
+
+        function downloadCSV(csv, filename) {
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        }
+
+        function resetView() {
+            uploadSection.style.display = 'block';
+            processing.style.display = 'none';
+            results.style.display = 'none';
+            fileInput.value = '';
+            processedData = null;
+        }
+
+        // Event listeners for buttons
+        document.getElementById('downloadBtn').addEventListener('click', downloadCurrentReport);
+
+        document.getElementById('resetBtn').addEventListener('click', resetView);
+    </script>
+</body>
+</html>
