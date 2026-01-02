@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Building Attendance Log Analyzer</title>
+    <title>Analizator Czasu Pracy</title>
     <style>
         * {
             margin: 0;
@@ -13,122 +13,91 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
             min-height: 100vh;
             padding: 20px;
         }
 
         .container {
-            max-width: 800px;
+            max-width: 1100px;
             margin: 0 auto;
             background: white;
             border-radius: 16px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
             overflow: hidden;
         }
 
         .header {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            background: linear-gradient(135deg, #0f3460 0%, #533483 100%);
             color: white;
-            padding: 40px;
+            padding: 30px;
             text-align: center;
         }
 
         .header h1 {
-            font-size: 2.5em;
+            font-size: 2em;
             margin-bottom: 10px;
-            font-weight: 300;
+            font-weight: 700;
         }
 
         .header p {
-            font-size: 1.1em;
             opacity: 0.9;
+            font-size: 1.1em;
         }
 
         .content {
-            padding: 40px;
+            padding: 30px;
         }
 
         .drop-zone {
-            border: 3px dashed #4facfe;
-            border-radius: 12px;
-            padding: 60px 20px;
+            border: 3px dashed #533483;
+            border-radius: 16px;
+            padding: 60px 30px;
             text-align: center;
             transition: all 0.3s ease;
-            background: #f8faff;
             cursor: pointer;
-            margin-bottom: 30px;
+            background: linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%);
         }
 
-        .drop-zone:hover,
-        .drop-zone.dragover {
-            border-color: #00f2fe;
-            background: #f0f8ff;
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(79, 172, 254, 0.2);
+        .drop-zone:hover, .drop-zone.dragover {
+            border-color: #0f3460;
+            background: linear-gradient(135deg, #e8edff 0%, #dce4ff 100%);
+            transform: scale(1.01);
         }
 
         .drop-zone i {
             font-size: 4em;
-            color: #4facfe;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             display: block;
         }
 
         .drop-zone h3 {
-            font-size: 1.5em;
             color: #333;
             margin-bottom: 10px;
+            font-size: 1.3em;
         }
 
         .drop-zone p {
             color: #666;
-            font-size: 1.1em;
+            font-size: 0.95em;
         }
 
         .file-input {
             display: none;
         }
 
-        .options {
-            background: #f8f9fa;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 30px;
-        }
-
-        .options h4 {
-            margin-bottom: 15px;
-            color: #333;
-        }
-
-        .option-group {
-            margin-bottom: 15px;
-        }
-
-        .option-group label {
-            display: flex;
-            align-items: center;
-            cursor: pointer;
-            padding: 8px 0;
-        }
-
-        .option-group input[type="radio"] {
-            margin-right: 10px;
-        }
-
         .processing {
-            display: none;
             text-align: center;
             padding: 40px;
+            display: none;
         }
 
         .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #4facfe;
-            border-radius: 50%;
             width: 50px;
             height: 50px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #533483;
+            border-radius: 50%;
             animation: spin 1s linear infinite;
             margin: 0 auto 20px;
         }
@@ -142,104 +111,533 @@
             display: none;
         }
 
+        .legend {
+            margin-top: 25px;
+            padding: 15px 20px;
+            background: linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%);
+            border-radius: 12px;
+            border: 1px solid #e0e5f0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .legend:hover {
+            border-color: #533483;
+        }
+
+        .legend-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+        }
+
+        .legend-title {
+            font-weight: 600;
+            color: #333;
+            font-size: 0.9em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-expand-icon {
+            transition: transform 0.3s ease;
+            color: #533483;
+            font-size: 0.8em;
+        }
+
+        .legend.expanded .legend-expand-icon {
+            transform: rotate(180deg);
+        }
+
+        .legend-squares {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .legend.expanded .legend-squares {
+            display: none;
+        }
+
+        .legend-square {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            border: 2px solid rgba(0,0,0,0.1);
+            position: relative;
+            transition: transform 0.2s ease;
+        }
+
+        .legend-square:hover {
+            transform: scale(1.15);
+            border-color: rgba(0,0,0,0.3);
+        }
+
+        .legend-square.green { background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%); border-color: #28a745; }
+        .legend-square.yellow { background: linear-gradient(135deg, #fff3cd 0%, #ffeeba 100%); border-color: #ffc107; }
+        .legend-square.red { background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%); border-color: #dc3545; }
+        .legend-square.gray { background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%); border-color: #6c757d; }
+
+        .legend-square::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 0.75em;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s ease;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .legend-square::before {
+            content: '';
+            position: absolute;
+            bottom: calc(100% + 2px);
+            left: 50%;
+            transform: translateX(-50%);
+            border: 6px solid transparent;
+            border-top-color: #333;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s ease;
+            z-index: 100;
+        }
+
+        .legend-square:hover::after,
+        .legend-square:hover::before {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .legend-details {
+            display: none;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #e0e5f0;
+        }
+
+        .legend.expanded .legend-details {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85em;
+            color: #555;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+
+        .legend-color.green { background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%); }
+        .legend-color.yellow { background: linear-gradient(135deg, #fff3cd 0%, #ffeeba 100%); }
+        .legend-color.red { background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%); }
+        .legend-color.gray { background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%); }
+
+        .work-hours-info {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f0f4ff;
+            border-radius: 8px;
+            border-left: 4px solid #533483;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
         .summary-table {
             width: 100%;
             border-collapse: collapse;
-            margin: 20px 0;
-            background: white;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-top: 15px;
         }
 
         .summary-table th,
         .summary-table td {
-            padding: 12px 15px;
+            padding: 14px 16px;
             text-align: left;
             border-bottom: 1px solid #eee;
         }
 
         .summary-table th {
-            background: #4facfe;
+            background: linear-gradient(135deg, #0f3460 0%, #533483 100%);
             color: white;
             font-weight: 600;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .summary-table tr:hover {
             background: #f8f9fa;
         }
 
+        .summary-table tr.clickable {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .summary-table tr.clickable:hover {
+            background: linear-gradient(135deg, #e8edff 0%, #dce4ff 100%);
+        }
+
+        .detail-row {
+            display: none;
+            background: #f8f9fa;
+        }
+
+        .detail-row.expanded {
+            display: table-row;
+        }
+
+        .detail-row td {
+            padding: 0 !important;
+            border-bottom: 2px solid #ddd;
+        }
+
+        .detail-content {
+            padding: 20px;
+            background: #ffffff;
+            margin: 10px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+
+        .detail-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        .detail-table th,
+        .detail-table td {
+            padding: 10px 14px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        .detail-table th {
+            background: #f0f0f0;
+            font-weight: 600;
+            color: #333;
+            font-size: 0.85em;
+        }
+
+        .detail-table tr.status-green {
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+        }
+
+        .detail-table tr.status-yellow {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeeba 100%);
+        }
+
+        .detail-table tr.status-red {
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+        }
+
+        .detail-table tr.status-gray {
+            background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+        }
+
+        .inferred-time {
+            font-style: italic;
+            color: #6c757d;
+            cursor: help;
+            border-bottom: 1px dashed #6c757d;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+
+        .status-badge.green {
+            background: #28a745;
+            color: white;
+        }
+
+        .status-badge.yellow {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .status-badge.red {
+            background: #dc3545;
+            color: white;
+        }
+
+        .status-badge.gray {
+            background: #6c757d;
+            color: white;
+        }
+
+        .hours-display {
+            font-weight: 600;
+            font-size: 1.05em;
+        }
+
+        .expected-hours {
+            font-size: 0.8em;
+            color: #666;
+            font-weight: normal;
+        }
+
+        .expand-icon {
+            display: inline-block;
+            margin-right: 10px;
+            transition: transform 0.3s ease;
+            font-weight: bold;
+            color: #533483;
+            font-size: 0.9em;
+        }
+
+        .expand-icon.expanded {
+            transform: rotate(90deg);
+        }
+
+        .options {
+            margin: 25px 0;
+            padding: 25px;
+            background: linear-gradient(135deg, #f8f9ff 0%, #f0f4ff 100%);
+            border-radius: 12px;
+            border: 1px solid #e0e5f0;
+        }
+
+        .options h4 {
+            margin-bottom: 15px;
+            color: #333;
+            font-size: 1em;
+        }
+
+        .option-group {
+            margin: 12px 0;
+        }
+
+        .option-group label {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            font-size: 0.95em;
+            color: #444;
+        }
+
+        .option-group input[type="radio"] {
+            margin-right: 10px;
+            transform: scale(1.2);
+        }
+
+        .results-options {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .results-options label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-size: 0.95em;
+        }
+
+        .results-options input[type="radio"] {
+            margin-right: 8px;
+        }
+
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 25px;
+            justify-content: center;
+        }
+
         .download-btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #0f3460 0%, #533483 100%);
             color: white;
             border: none;
-            padding: 15px 30px;
-            border-radius: 8px;
-            font-size: 1.1em;
+            padding: 14px 28px;
+            border-radius: 10px;
+            font-size: 1em;
             cursor: pointer;
             transition: all 0.3s ease;
-            margin: 10px 5px;
+            font-weight: 600;
         }
 
         .download-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+            box-shadow: 0 8px 25px rgba(83, 52, 131, 0.35);
         }
 
         .reset-btn {
             background: #6c757d;
             color: white;
             border: none;
-            padding: 15px 30px;
-            border-radius: 8px;
-            font-size: 1.1em;
+            padding: 14px 28px;
+            border-radius: 10px;
+            font-size: 1em;
             cursor: pointer;
             transition: all 0.3s ease;
-            margin: 10px 5px;
+            font-weight: 600;
         }
 
         .reset-btn:hover {
             background: #5a6268;
+            transform: translateY(-2px);
         }
 
         .error {
-            background: #f8d7da;
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
             color: #721c24;
-            padding: 15px;
-            border-radius: 8px;
+            padding: 18px;
+            border-radius: 10px;
             margin: 20px 0;
             border: 1px solid #f5c6cb;
+        }
+
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .stat-card.green {
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            border: 1px solid #28a745;
+        }
+
+        .stat-card.yellow {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeeba 100%);
+            border: 1px solid #ffc107;
+        }
+
+        .stat-card.red {
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+            border: 1px solid #dc3545;
+        }
+
+        .stat-card .stat-value {
+            font-size: 2em;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .stat-card .stat-label {
+            font-size: 0.85em;
+            color: #555;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            .header {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 1.5em;
+            }
+
+            .content {
+                padding: 15px;
+            }
+
+            .drop-zone {
+                padding: 40px 20px;
+            }
+
+            .legend {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            .download-btn, .reset-btn {
+                width: 100%;
+            }
+
+            .summary-table th,
+            .summary-table td {
+                padding: 10px 8px;
+                font-size: 0.85em;
+            }
+
+            .detail-table th,
+            .detail-table td {
+                padding: 8px 6px;
+                font-size: 0.8em;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>📊 Attendance Analyzer</h1>
-            <p>Drop your attendance log file and get instant reports</p>
+            <h1>📊 Analizator Czasu Pracy</h1>
+            <p>Przeciągnij plik z logami obecności i sprawdź szczegóły</p>
         </div>
 
         <div class="content">
             <div id="upload-section">
                 <div class="drop-zone" id="dropZone">
                     <i>📁</i>
-                    <h3>Drop your attendance log file here</h3>
-                    <p>or click to browse (supports .txt, .csv, .tsv files)</p>
+                    <h3>Przeciągnij plik z logami tutaj</h3>
+                    <p>lub kliknij, żeby wybrać plik (.txt, .csv, .tsv)</p>
                 </div>
                 <input type="file" id="fileInput" class="file-input" accept=".txt,.csv,.tsv">
 
                 <div class="options">
-                    <h4>What to do when someone only checked in once that day?</h4>
+                    <h4>Co zrobić gdy ktoś odbił się tylko raz danego dnia?</h4>
                     <div class="option-group">
                         <label>
                             <input type="radio" name="singleEntry" value="exclude" checked>
-                            Don't count those days in the report
+                            Nie licz tych dni w raporcie
                         </label>
                     </div>
                     <div class="option-group">
                         <label>
                             <input type="radio" name="singleEntry" value="assume8">
-                            Count those days as 8 hours worked
+                            Licz jako 8 godzin pracy
                         </label>
                     </div>
                 </div>
@@ -247,98 +645,116 @@
 
             <div class="processing" id="processing">
                 <div class="spinner"></div>
-                <p>Processing your attendance data...</p>
+                <p>Przetwarzanie danych...</p>
             </div>
 
             <div class="results" id="results">
-                <h3>📈 Analysis Results</h3>
-                
-                <div class="options">
-                    <h4>What to do when someone only checked in once that day?</h4>
-                    <div class="option-group">
-                        <label>
-                            <input type="radio" name="resultsSingleEntry" value="exclude" checked>
-                            Don't count those days in the report
-                        </label>
+                <div id="summaryStats" class="summary-stats"></div>
+
+                <div id="resultsContainer"></div>
+
+                <div class="results-options">
+                    <strong>Wyświetl:</strong>
+                    <label>
+                        <input type="radio" name="resultsSingleEntry" value="exclude" checked onchange="updateResults()">
+                        Bez pojedynczych odbić
+                    </label>
+                    <label>
+                        <input type="radio" name="resultsSingleEntry" value="assume8" onchange="updateResults()">
+                        Pojedyncze odbicia = 8h
+                    </label>
+                </div>
+
+                <div class="legend" id="legend" onclick="toggleLegend()">
+                    <div class="legend-header">
+                        <div class="legend-title">
+                            <span class="legend-expand-icon">▼</span>
+                            Legenda kolorów
+                        </div>
+                        <div class="legend-squares">
+                            <div class="legend-square green" data-tooltip="OK - Pełny czas pracy"></div>
+                            <div class="legend-square yellow" data-tooltip="Prawie - Lekki niedobór"></div>
+                            <div class="legend-square red" data-tooltip="Za mało - Niedobór"></div>
+                            <div class="legend-square gray" data-tooltip="Pojedyncze odbicie"></div>
+                        </div>
                     </div>
-                    <div class="option-group">
-                        <label>
-                            <input type="radio" name="resultsSingleEntry" value="assume8">
-                            Count those days as 8 hours worked
-                        </label>
+                    <div class="legend-details">
+                        <div class="work-hours-info" style="width: 100%; margin-bottom: 10px;">
+                            <strong>Wymagany czas pracy:</strong> Poniedziałek-Czwartek: 8.5h | Piątek: 6h
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color green"></div>
+                            <span><strong>OK</strong> - Pełny czas (Pn-Cz: ≥8.5h, Pt: ≥6h)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color yellow"></div>
+                            <span><strong>Prawie</strong> - Lekki niedobór (Pn-Cz: 8-8.5h, Pt: 5.5-6h)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color red"></div>
+                            <span><strong>Za mało</strong> - Niedobór (Pn-Cz: &lt;8h, Pt: &lt;5.5h)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color gray"></div>
+                            <span><strong>Pojedyncze odbicie</strong> - Tylko jedno wejście/wyjście</span>
+                        </div>
                     </div>
                 </div>
-                
-                <div id="summaryContainer"></div>
-                <div style="text-align: center; margin-top: 30px;">
-                    <button class="download-btn" id="downloadBtn">Download Report</button>
-                    <button class="reset-btn" id="resetBtn">Analyze Another File</button>
+
+                <div class="button-group">
+                    <button class="download-btn" id="downloadBtn">📥 Pobierz raport CSV</button>
+                    <button class="download-btn" id="downloadDetailedBtn">📥 Pobierz szczegółowy raport CSV</button>
+                    <button class="reset-btn" id="resetBtn">🔄 Analizuj nowy plik</button>
                 </div>
             </div>
-
-            <div id="errorContainer"></div>
         </div>
     </div>
 
     <script>
         let processedData = null;
-
-        // File handling
+        
         const dropZone = document.getElementById('dropZone');
         const fileInput = document.getElementById('fileInput');
+        const uploadSection = document.getElementById('upload-section');
         const processing = document.getElementById('processing');
         const results = document.getElementById('results');
-        const uploadSection = document.getElementById('upload-section');
-        const errorContainer = document.getElementById('errorContainer');
 
+        // Drag and drop handlers
         dropZone.addEventListener('click', () => fileInput.click());
-        dropZone.addEventListener('dragover', handleDragOver);
-        dropZone.addEventListener('drop', handleDrop);
-        fileInput.addEventListener('change', handleFileSelect);
-
-        function handleDragOver(e) {
+        
+        dropZone.addEventListener('dragover', (e) => {
             e.preventDefault();
             dropZone.classList.add('dragover');
-        }
+        });
 
-        function handleDrop(e) {
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
             e.preventDefault();
             dropZone.classList.remove('dragover');
-            const files = e.dataTransfer.files;
-            if (files.length > 0) {
-                processFile(files[0]);
-            }
-        }
+            const file = e.dataTransfer.files[0];
+            if (file) processFile(file);
+        });
 
-        function handleFileSelect(e) {
-            if (e.target.files.length > 0) {
-                processFile(e.target.files[0]);
-            }
-        }
-
-        function showError(message) {
-            errorContainer.innerHTML = `<div class="error">${message}</div>`;
-        }
-
-        function clearError() {
-            errorContainer.innerHTML = '';
-        }
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) processFile(file);
+        });
 
         function processFile(file) {
-            clearError();
             uploadSection.style.display = 'none';
             processing.style.display = 'block';
 
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = (e) => {
                 try {
                     const content = e.target.result;
-                    const data = parseAttendanceData(content);
-                    processedData = analyzeAttendance(data);
+                    processedData = parseAttendanceData(content);
                     displayResults();
                 } catch (error) {
-                    showError(`Error processing file: ${error.message}`);
-                    resetView();
+                    showError('Błąd przetwarzania pliku: ' + error.message);
                 }
             };
             reader.readAsText(file);
@@ -346,230 +762,498 @@
 
         function parseAttendanceData(content) {
             const lines = content.trim().split('\n');
-            const data = [];
-            
-            // Skip header line
-            for (let i = 1; i < lines.length; i++) {
+            const users = {};
+
+            // Skip header line if it exists
+            const startIndex = lines[0].toLowerCase().includes('id') && 
+                              lines[0].toLowerCase().includes('name') ? 1 : 0;
+
+            for (let i = startIndex; i < lines.length; i++) {
                 const line = lines[i].trim();
                 if (!line) continue;
-                
-                // Handle tab-separated values - split by tab first, then by spaces if needed
-                let parts = line.split('\t').filter(part => part.trim() !== '');
-                
-                // If we don't have enough parts with tabs, try splitting by multiple spaces
-                if (parts.length < 4) {
-                    parts = line.split(/\s+/).filter(part => part.trim() !== '');
-                }
+
+                // Parse tab-separated or whitespace-separated values
+                const parts = line.split(/\t+/);
                 
                 if (parts.length >= 4) {
-                    const id = parts[0];
-                    const name = parts[1];
-                    const department = parts[2];
-                    
-                    // The datetime might be in parts[3] as "DD-MM-YYYY HH:MM:SS"
-                    // or split across parts[3] and parts[4]
-                    let dateTimeStr = parts[3];
-                    if (parts.length > 4 && parts[4]) {
-                        dateTimeStr += ' ' + parts[4];
-                    }
-                    
-                    // Parse date and time - expect format like "07-01-2025     07:03:49"
-                    const dateTimeMatch = dateTimeStr.match(/(\d{2}-\d{2}-\d{4})\s+(\d{2}:\d{2}:\d{2})/);
-                    
-                    if (dateTimeMatch) {
-                        const datePart = dateTimeMatch[1]; // "07-01-2025"
-                        const timePart = dateTimeMatch[2]; // "07:03:49"
-                        
-                        const [day, month, year] = datePart.split('-').map(Number);
-                        const [hour, minute, second] = timePart.split(':').map(Number);
-                        
-                        if (day && month && year && hour !== undefined && minute !== undefined && second !== undefined) {
-                            const fullDate = new Date(year, month - 1, day, hour, minute, second);
-                            
-                            data.push({
-                                id: parseInt(id) || 0,
-                                name: name,
-                                department: department,
-                                datetime: fullDate,
-                                date: `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`
-                            });
-                        }
-                    }
-                }
-            }
-            
-            if (data.length === 0) {
-                throw new Error('No valid data found in file. Please check that your file has the correct format with columns: ID, Name, Department, Date Time, Device ID');
-            }
-            
-            return data;
-        }
+                    const id = parts[0].trim();
+                    const name = parts[1].trim().toLowerCase();
+                    const department = parts[2].trim();
+                    const timeStr = parts[3].trim();
 
-        function analyzeAttendance(data) {
-            const userStats = {};
-            
-            // Group by user and date
-            const userDays = {};
-            
-            data.forEach(entry => {
-                const key = `${entry.name}_${entry.date}`;
-                if (!userDays[key]) {
-                    userDays[key] = {
-                        name: entry.name,
-                        date: entry.date,
-                        entries: []
-                    };
+                    // Parse the date and time - handle format "MM-DD-YYYY HH:MM:SS"
+                    const timeMatch = timeStr.match(/(\d{2})-(\d{2})-(\d{4})\s+(\d{2}):(\d{2}):(\d{2})/);
+                    
+                    if (timeMatch) {
+                        const month = parseInt(timeMatch[1]);
+                        const day = parseInt(timeMatch[2]);
+                        const year = parseInt(timeMatch[3]);
+                        const hours = parseInt(timeMatch[4]);
+                        const minutes = parseInt(timeMatch[5]);
+                        const seconds = parseInt(timeMatch[6]);
+
+                        const timestamp = new Date(year, month - 1, day, hours, minutes, seconds);
+                        const dateKey = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+                        if (!users[name]) {
+                            users[name] = {
+                                id: id,
+                                name: name,
+                                days: {}
+                            };
+                        }
+
+                        if (!users[name].days[dateKey]) {
+                            users[name].days[dateKey] = {
+                                entries: [],
+                                date: timestamp
+                            };
+                        }
+
+                        users[name].days[dateKey].entries.push(timestamp);
+                    }
                 }
-                userDays[key].entries.push(entry);
-            });
-            
-            // Calculate daily working hours
-            Object.values(userDays).forEach(dayData => {
-                if (!userStats[dayData.name]) {
-                    userStats[dayData.name] = {
-                        name: dayData.name,
-                        totalHours_exclude: 0,
-                        totalHours_assume8: 0,
-                        daysWorked_exclude: 0,
-                        daysWorked_assume8: 0,
-                        dailyHours: []
-                    };
-                }
+            }
+
+            // Calculate daily hours and totals for each user
+            for (const userName in users) {
+                const user = users[userName];
+                user.dailyHours = [];
+                user.totalHours_exclude = 0;
+                user.totalHours_assume8 = 0;
+                user.daysWorked_exclude = 0;
+                user.daysWorked_assume8 = 0;
+
+                // Stats for color-coded summary
+                user.greenDays = 0;
+                user.yellowDays = 0;
+                user.redDays = 0;
+                user.grayDays = 0;
+
+                const sortedDates = Object.keys(user.days).sort();
                 
-                const entries = dayData.entries.sort((a, b) => a.datetime - b.datetime);
-                const user = userStats[dayData.name];
-                
-                if (entries.length === 1) {
-                    // Single entry - handle according to option
-                    user.totalHours_assume8 += 8;
-                    user.daysWorked_assume8++;
-                    user.dailyHours.push({ date: dayData.date, hours: 8, type: 'assumed' });
-                } else if (entries.length >= 2) {
-                    // Multiple entries - calculate time difference
+                for (const dateKey of sortedDates) {
+                    const dayData = user.days[dateKey];
+                    const entries = dayData.entries.sort((a, b) => a - b);
                     const firstEntry = entries[0];
                     const lastEntry = entries[entries.length - 1];
-                    const diffMs = lastEntry.datetime - firstEntry.datetime;
-                    const hours = diffMs / (1000 * 60 * 60);
+                    const dayOfWeek = firstEntry.getDay(); // 0=Sun, 1=Mon, ..., 5=Fri, 6=Sat
                     
-                    user.totalHours_exclude += hours;
-                    user.totalHours_assume8 += hours;
-                    user.daysWorked_exclude++;
-                    user.daysWorked_assume8++;
-                    user.dailyHours.push({ date: dayData.date, hours: hours, type: 'calculated' });
+                    let dayInfo = {
+                        date: dateKey,
+                        dayOfWeek: dayOfWeek,
+                        dayName: getDayName(dayOfWeek),
+                        firstEntry: firstEntry,
+                        lastEntry: lastEntry,
+                        entryCount: entries.length
+                    };
+
+                    if (entries.length === 1) {
+                        // Single entry
+                        dayInfo.hours = 8;
+                        dayInfo.type = 'assumed';
+                        dayInfo.status = getHoursStatus(8, dayOfWeek, true);
+                        user.totalHours_assume8 += 8;
+                        user.daysWorked_assume8++;
+                        user.grayDays++;
+                    } else {
+                        // Calculate hours between first and last entry
+                        const hoursWorked = (lastEntry - firstEntry) / (1000 * 60 * 60);
+                        dayInfo.hours = hoursWorked;
+                        dayInfo.type = 'calculated';
+                        dayInfo.status = getHoursStatus(hoursWorked, dayOfWeek, false);
+                        
+                        user.totalHours_exclude += hoursWorked;
+                        user.totalHours_assume8 += hoursWorked;
+                        user.daysWorked_exclude++;
+                        user.daysWorked_assume8++;
+
+                        // Count by status
+                        if (dayInfo.status === 'green') user.greenDays++;
+                        else if (dayInfo.status === 'yellow') user.yellowDays++;
+                        else if (dayInfo.status === 'red') user.redDays++;
+                    }
+
+                    user.dailyHours.push(dayInfo);
                 }
-            });
+
+                // Calculate averages
+                user.avgHours_exclude = user.daysWorked_exclude > 0 
+                    ? user.totalHours_exclude / user.daysWorked_exclude 
+                    : 0;
+                user.avgHours_assume8 = user.daysWorked_assume8 > 0 
+                    ? user.totalHours_assume8 / user.daysWorked_assume8 
+                    : 0;
+            }
+
+            return users;
+        }
+
+        function getDayName(dayOfWeek) {
+            const days = ['Niedziela', 'Poniedziałek', 'Wtorek', 'Środa', 'Czwartek', 'Piątek', 'Sobota'];
+            return days[dayOfWeek];
+        }
+
+        function getShortDayName(dayOfWeek) {
+            const days = ['Nd', 'Pn', 'Wt', 'Śr', 'Cz', 'Pt', 'Sb'];
+            return days[dayOfWeek];
+        }
+
+        function getExpectedHours(dayOfWeek) {
+            // Friday = 6h, Mon-Thu = 8.5h, Weekend = 0
+            if (dayOfWeek === 5) return 6; // Friday
+            if (dayOfWeek >= 1 && dayOfWeek <= 4) return 8.5; // Mon-Thu
+            return 8; // Weekend (shouldn't normally happen)
+        }
+
+        function getHoursStatus(hours, dayOfWeek, isSingleEntry) {
+            if (isSingleEntry) return 'gray';
             
-            // Calculate averages
-            Object.values(userStats).forEach(user => {
-                user.avgHours_exclude = user.daysWorked_exclude > 0 ? user.totalHours_exclude / user.daysWorked_exclude : 0;
-                user.avgHours_assume8 = user.daysWorked_assume8 > 0 ? user.totalHours_assume8 / user.daysWorked_assume8 : 0;
-            });
+            // Round to 2 decimal places to avoid floating point issues
+            const roundedHours = Math.round(hours * 100) / 100;
             
-            return userStats;
+            if (dayOfWeek === 5) {
+                // Friday: 6h required
+                if (roundedHours >= 6) return 'green';
+                if (roundedHours >= 5.5) return 'yellow';
+                return 'red';
+            } else if (dayOfWeek >= 1 && dayOfWeek <= 4) {
+                // Mon-Thu: 8.5h required
+                if (roundedHours >= 8.5) return 'green';
+                if (roundedHours >= 8) return 'yellow';
+                return 'red';
+            } else {
+                // Weekend
+                if (roundedHours >= 6) return 'green';
+                return 'yellow';
+            }
+        }
+
+        function getStatusText(status) {
+            switch(status) {
+                case 'green': return 'OK';
+                case 'yellow': return 'Prawie';
+                case 'red': return 'Za mało';
+                case 'gray': return 'Pojedyncze';
+                default: return '';
+            }
         }
 
         function displayResults() {
             processing.style.display = 'none';
             results.style.display = 'block';
-            
-            // Copy the selected option to the results radio buttons
-            const initialOption = document.querySelector('input[name="singleEntry"]:checked').value;
-            document.querySelector(`input[name="resultsSingleEntry"][value="${initialOption}"]`).checked = true;
-            
-            // Update the display
-            updateResultsDisplay();
-            
-            // Add event listeners to results radio buttons
-            document.querySelectorAll('input[name="resultsSingleEntry"]').forEach(radio => {
-                radio.addEventListener('change', updateResultsDisplay);
-            });
+            updateResults();
         }
 
-        function updateResultsDisplay() {
-            const container = document.getElementById('summaryContainer');
+        function updateResults() {
             const selectedOption = document.querySelector('input[name="resultsSingleEntry"]:checked').value;
+            const container = document.getElementById('resultsContainer');
+            const statsContainer = document.getElementById('summaryStats');
             
-            // Show the selected approach
+            // Collapse all expanded rows when switching modes
+            document.querySelectorAll('.detail-row.expanded').forEach(row => {
+                row.classList.remove('expanded');
+            });
+            document.querySelectorAll('.expand-icon.expanded').forEach(icon => {
+                icon.classList.remove('expanded');
+            });
+            
+            // Calculate overall stats
+            let totalGreen = 0, totalYellow = 0, totalRed = 0;
+            Object.values(processedData).forEach(user => {
+                totalGreen += user.greenDays;
+                totalYellow += user.yellowDays;
+                totalRed += user.redDays;
+            });
+
+            statsContainer.innerHTML = `
+                <div class="stat-card green">
+                    <div class="stat-value">${totalGreen}</div>
+                    <div class="stat-label">dni z pełnym czasem</div>
+                </div>
+                <div class="stat-card yellow">
+                    <div class="stat-value">${totalYellow}</div>
+                    <div class="stat-label">dni z lekkim niedoborem</div>
+                </div>
+                <div class="stat-card red">
+                    <div class="stat-value">${totalRed}</div>
+                    <div class="stat-label">dni z niedoborem</div>
+                </div>
+            `;
+
             const table = createSummaryTable(processedData, selectedOption);
             const title = selectedOption === 'exclude' ? 
-                'Results: Not counting single check-ins' : 
-                'Results: Counting single check-ins as 8 hours';
+                'Wyniki: Bez pojedynczych odbić' : 
+                'Wyniki: Pojedyncze odbicia = 8h';
             
             container.innerHTML = `
-                <h4>${title}</h4>
+                <h4 style="margin-bottom: 15px; color: #333;">${title}</h4>
+                <p style="color: #666; margin-bottom: 15px; font-size: 0.9em;">
+                    Kliknij na pracownika, żeby zobaczyć szczegóły każdego dnia
+                </p>
                 ${table}
             `;
-        }
-
-        function formatHoursToHHMM(hours) {
-            const totalMinutes = Math.round(hours * 60);
-            const h = Math.floor(totalMinutes / 60);
-            const m = totalMinutes % 60;
-            return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
         }
 
         function createSummaryTable(data, type) {
             const users = Object.values(data).sort((a, b) => a.name.localeCompare(b.name));
             
             let tableHTML = `
+                <div class="table-wrapper">
                 <table class="summary-table">
                     <thead>
                         <tr>
-                            <th>Name</th>
-                            <th>Days Worked</th>
-                            <th>Total Hours</th>
-                            <th>Average Hours/Day</th>
+                            <th>Imię</th>
+                            <th>Dni</th>
+                            <th>Suma godzin</th>
+                            <th>Średnia/dzień</th>
+                            <th style="text-align: center;">🟢</th>
+                            <th style="text-align: center;">🟡</th>
+                            <th style="text-align: center;">🔴</th>
                         </tr>
                     </thead>
                     <tbody>
             `;
             
-            users.forEach(user => {
+            users.forEach((user) => {
                 const totalHours = type === 'exclude' ? user.totalHours_exclude : user.totalHours_assume8;
                 const daysWorked = type === 'exclude' ? user.daysWorked_exclude : user.daysWorked_assume8;
                 const avgHours = type === 'exclude' ? user.avgHours_exclude : user.avgHours_assume8;
                 
+                const safeUserName = user.name.replace(/'/g, "\\'");
+                
                 tableHTML += `
-                    <tr>
-                        <td>${user.name}</td>
+                    <tr class="clickable" onclick="toggleDetails('${safeUserName}', '${type}')">
+                        <td>
+                            <span class="expand-icon" id="icon-${user.name}">▶</span>
+                            <strong>${capitalizeFirst(user.name)}</strong>
+                        </td>
                         <td>${daysWorked}</td>
-                        <td>${formatHoursToHHMM(totalHours)}</td>
+                        <td><strong>${formatHoursToHHMM(totalHours)}</strong></td>
                         <td>${formatHoursToHHMM(avgHours)}</td>
+                        <td style="text-align: center;">${user.greenDays}</td>
+                        <td style="text-align: center;">${user.yellowDays}</td>
+                        <td style="text-align: center;">${user.redDays}</td>
+                    </tr>
+                    <tr class="detail-row" id="detail-${user.name}">
+                        <td colspan="7" id="detail-content-${user.name}"></td>
                     </tr>
                 `;
             });
             
-            tableHTML += '</tbody></table>';
+            tableHTML += '</tbody></table></div>';
             return tableHTML;
+        }
+
+        function toggleDetails(userName, type) {
+            const detailRow = document.getElementById(`detail-${userName}`);
+            const icon = document.getElementById(`icon-${userName}`);
+            const contentCell = document.getElementById(`detail-content-${userName}`);
+            
+            if (detailRow.classList.contains('expanded')) {
+                detailRow.classList.remove('expanded');
+                icon.classList.remove('expanded');
+                contentCell.innerHTML = '';
+            } else {
+                detailRow.classList.add('expanded');
+                icon.classList.add('expanded');
+                const user = processedData[userName];
+                contentCell.innerHTML = createDailyDetailsTable(user, type);
+            }
+        }
+
+        function createDailyDetailsTable(user, type) {
+            // Always show all days, including single entries
+            const dailyHours = user.dailyHours;
+
+            let detailHTML = `
+                <div class="detail-content">
+                    <h5 style="margin-bottom: 15px; color: #333;">
+                        📅 Szczegóły obecności: <strong>${capitalizeFirst(user.name)}</strong>
+                    </h5>
+                    <div class="table-wrapper">
+                    <table class="detail-table">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Dzień</th>
+                                <th>Wejście</th>
+                                <th>Wyjście</th>
+                                <th>Czas pracy</th>
+                                <th>Wymagane</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            dailyHours.forEach(day => {
+                const expectedHours = getExpectedHours(day.dayOfWeek);
+                
+                if (day.type === 'assumed') {
+                    // Single entry day
+                    if (type === 'exclude') {
+                        // Exclude mode: show only entry time, no exit, no sum
+                        detailHTML += `
+                            <tr class="status-gray">
+                                <td><strong>${formatDatePL(day.date)}</strong></td>
+                                <td>${day.dayName}</td>
+                                <td>${formatTime(day.firstEntry)}</td>
+                                <td><em>—</em></td>
+                                <td><em>—</em></td>
+                                <td><span class="expected-hours">${formatHoursToHHMM(expectedHours)}</span></td>
+                                <td><span class="status-badge gray">Pojedyncze</span></td>
+                            </tr>
+                        `;
+                    } else {
+                        // Assume 8h mode: infer entry/exit based on time
+                        const entryHour = day.firstEntry.getHours();
+                        let displayEntry, displayExit, inferredEntry, inferredExit;
+                        
+                        if (entryHour < 12) {
+                            // Before noon: treat as entry, infer exit = entry + 8h
+                            displayEntry = formatTime(day.firstEntry);
+                            inferredExit = new Date(day.firstEntry.getTime() + 8 * 60 * 60 * 1000);
+                            displayExit = `<em class="inferred-time" title="Czas wyliczony (wejście + 8h)">${formatTime(inferredExit)}</em>`;
+                            inferredEntry = false;
+                        } else {
+                            // After noon: treat as exit, infer entry = exit - 8h
+                            inferredEntry = new Date(day.firstEntry.getTime() - 8 * 60 * 60 * 1000);
+                            displayEntry = `<em class="inferred-time" title="Czas wyliczony (wyjście - 8h)">${formatTime(inferredEntry)}</em>`;
+                            displayExit = formatTime(day.firstEntry);
+                        }
+                        
+                        detailHTML += `
+                            <tr class="status-gray">
+                                <td><strong>${formatDatePL(day.date)}</strong></td>
+                                <td>${day.dayName}</td>
+                                <td>${displayEntry}</td>
+                                <td>${displayExit}</td>
+                                <td>
+                                    <span class="hours-display">${formatHoursToHHMM(day.hours)}</span>
+                                    <br><small>(założone)</small>
+                                </td>
+                                <td><span class="expected-hours">${formatHoursToHHMM(expectedHours)}</span></td>
+                                <td><span class="status-badge gray">Pojedyncze</span></td>
+                            </tr>
+                        `;
+                    }
+                } else {
+                    // Normal day with multiple entries
+                    const diff = day.hours - expectedHours;
+                    const diffStr = diff >= 0 ? `+${formatHoursToHHMM(diff)}` : `-${formatHoursToHHMM(Math.abs(diff))}`;
+                    
+                    detailHTML += `
+                        <tr class="status-${day.status}">
+                            <td><strong>${formatDatePL(day.date)}</strong></td>
+                            <td>${day.dayName}</td>
+                            <td>${formatTime(day.firstEntry)}</td>
+                            <td>${formatTime(day.lastEntry)}</td>
+                            <td>
+                                <span class="hours-display">${formatHoursToHHMM(day.hours)}</span>
+                            </td>
+                            <td>
+                                <span class="expected-hours">${formatHoursToHHMM(expectedHours)}</span>
+                            </td>
+                            <td>
+                                <span class="status-badge ${day.status}">${getStatusText(day.status)}</span>
+                                <br><small>${diffStr}</small>
+                            </td>
+                        </tr>
+                    `;
+                }
+            });
+
+            detailHTML += `
+                        </tbody>
+                    </table>
+                    </div>
+                </div>
+            `;
+
+            return detailHTML;
+        }
+
+        function capitalizeFirst(str) {
+            return str.charAt(0).toUpperCase() + str.slice(1);
+        }
+
+        function formatHoursToHHMM(hours) {
+            const totalMinutes = Math.round(hours * 60);
+            const h = Math.floor(totalMinutes / 60);
+            const m = Math.abs(totalMinutes % 60);
+            return `${h}:${m.toString().padStart(2, '0')}`;
+        }
+
+        function formatTime(date) {
+            if (!date) return 'N/A';
+            const hours = date.getHours().toString().padStart(2, '0');
+            const minutes = date.getMinutes().toString().padStart(2, '0');
+            return `${hours}:${minutes}`;
+        }
+
+        function formatDatePL(dateStr) {
+            const [year, month, day] = dateStr.split('-');
+            return `${day}.${month}.${year}`;
         }
 
         function generateCSV(type) {
             const users = Object.values(processedData).sort((a, b) => a.name.localeCompare(b.name));
             
-            let csv = 'Name,Days Worked,Total Hours,Average Hours per Day\n';
+            let csv = 'Imię,Dni pracy,Suma godzin,Średnia/dzień,Dni OK,Dni prawie,Dni niedobór\n';
             
             users.forEach(user => {
                 const totalHours = type === 'exclude' ? user.totalHours_exclude : user.totalHours_assume8;
                 const daysWorked = type === 'exclude' ? user.daysWorked_exclude : user.daysWorked_assume8;
                 const avgHours = type === 'exclude' ? user.avgHours_exclude : user.avgHours_assume8;
                 
-                csv += `${user.name},${daysWorked},${formatHoursToHHMM(totalHours)},${formatHoursToHHMM(avgHours)}\n`;
+                csv += `${capitalizeFirst(user.name)},${daysWorked},${formatHoursToHHMM(totalHours)},${formatHoursToHHMM(avgHours)},${user.greenDays},${user.yellowDays},${user.redDays}\n`;
+            });
+            
+            return csv;
+        }
+
+        function generateDetailedCSV(type) {
+            const users = Object.values(processedData).sort((a, b) => a.name.localeCompare(b.name));
+            
+            let csv = 'Imię,Data,Dzień,Wejście,Wyjście,Czas pracy,Wymagane,Status\n';
+            
+            users.forEach(user => {
+                const dailyHours = type === 'exclude' 
+                    ? user.dailyHours.filter(day => day.type === 'calculated')
+                    : user.dailyHours;
+                
+                dailyHours.forEach(day => {
+                    const expectedHours = getExpectedHours(day.dayOfWeek);
+                    csv += `${capitalizeFirst(user.name)},${formatDatePL(day.date)},${day.dayName},${formatTime(day.firstEntry)},${day.type === 'assumed' ? 'brak' : formatTime(day.lastEntry)},${formatHoursToHHMM(day.hours)},${formatHoursToHHMM(expectedHours)},${getStatusText(day.status)}\n`;
+                });
             });
             
             return csv;
         }
 
         function downloadCurrentReport() {
-            const selectedOption = document.querySelector('input[name="singleEntry"]:checked').value;
+            const selectedOption = document.querySelector('input[name="resultsSingleEntry"]:checked').value;
             const csv = generateCSV(selectedOption);
             const filename = selectedOption === 'exclude' ? 
-                'attendance_report_skip_single_checkins.csv' : 
-                'attendance_report_count_single_as_8_hours.csv';
+                'raport_obecnosci_bez_pojedynczych.csv' : 
+                'raport_obecnosci_pojedyncze_8h.csv';
+            downloadCSV(csv, filename);
+        }
+
+        function downloadDetailedReport() {
+            const selectedOption = document.querySelector('input[name="resultsSingleEntry"]:checked').value;
+            const csv = generateDetailedCSV(selectedOption);
+            const filename = selectedOption === 'exclude' ? 
+                'raport_szczegolowy_bez_pojedynczych.csv' : 
+                'raport_szczegolowy_pojedyncze_8h.csv';
             downloadCSV(csv, filename);
         }
 
         function downloadCSV(csv, filename) {
-            const blob = new Blob([csv], { type: 'text/csv' });
+            // Add BOM for Excel to recognize UTF-8
+            const BOM = '\uFEFF';
+            const blob = new Blob([BOM + csv], { type: 'text/csv;charset=utf-8' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.style.display = 'none';
@@ -581,17 +1265,42 @@
             document.body.removeChild(a);
         }
 
+        function toggleLegend() {
+            const legend = document.getElementById('legend');
+            legend.classList.toggle('expanded');
+        }
+
+        function showError(message) {
+            processing.style.display = 'none';
+            uploadSection.style.display = 'block';
+            
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error';
+            errorDiv.textContent = message;
+            uploadSection.appendChild(errorDiv);
+            
+            setTimeout(() => errorDiv.remove(), 5000);
+        }
+
         function resetView() {
             uploadSection.style.display = 'block';
             processing.style.display = 'none';
             results.style.display = 'none';
             fileInput.value = '';
             processedData = null;
+            
+            // Collapse all expanded rows
+            document.querySelectorAll('.detail-row.expanded').forEach(row => {
+                row.classList.remove('expanded');
+            });
+            document.querySelectorAll('.expand-icon.expanded').forEach(icon => {
+                icon.classList.remove('expanded');
+            });
         }
 
         // Event listeners for buttons
         document.getElementById('downloadBtn').addEventListener('click', downloadCurrentReport);
-
+        document.getElementById('downloadDetailedBtn').addEventListener('click', downloadDetailedReport);
         document.getElementById('resetBtn').addEventListener('click', resetView);
     </script>
 </body>
