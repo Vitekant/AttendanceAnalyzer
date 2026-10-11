@@ -717,6 +717,7 @@
             </div>
 
             <div class="results" id="results">
+                <div id="loadedFile" class="work-hours-info"></div>
                 <div id="summaryStats" class="summary-stats"></div>
 
                 <div id="resultsContainer"></div>
@@ -799,6 +800,7 @@
             </div>
 
             <div class="results" id="field-results">
+                <div id="field-loadedFile" class="work-hours-info"></div>
                 <div id="field-summaryStats" class="summary-stats"></div>
 
                 <div id="field-resultsContainer"></div>
@@ -910,18 +912,29 @@
 
         setupDropZone(dropZone, fileInput, processFile);
 
+        // A loaded file is shared by both tabs - each tab only calculates it differently
         function processFile(file) {
             uploadSection.style.display = 'none';
             processing.style.display = 'block';
+            fieldUploadSection.style.display = 'none';
+            fieldProcessing.style.display = 'block';
 
             const reader = new FileReader();
             reader.onload = (e) => {
                 try {
                     const content = e.target.result;
                     processedData = parseAttendanceData(content);
+                    fieldData = parseFieldData(content);
+
+                    const fileLabel = `📄 Plik: ${file.name}`;
+                    document.getElementById('loadedFile').textContent = fileLabel;
+                    document.getElementById('field-loadedFile').textContent = fileLabel;
+
                     displayResults();
+                    displayFieldResults();
                 } catch (error) {
                     showError('Błąd przetwarzania pliku: ' + error.message);
+                    showError('Błąd przetwarzania pliku: ' + error.message, fieldUploadSection, fieldProcessing);
                 }
             };
             reader.readAsText(file);
@@ -1483,6 +1496,9 @@
             document.querySelectorAll('#tab-office .expand-icon.expanded').forEach(icon => {
                 icon.classList.remove('expanded');
             });
+
+            // The file is shared, so the field tab is cleared too
+            resetFieldView();
         }
 
         // Event listeners for buttons
@@ -1503,23 +1519,7 @@
         const fieldProcessing = document.getElementById('field-processing');
         const fieldResults = document.getElementById('field-results');
 
-        setupDropZone(fieldDropZone, fieldFileInput, processFieldFile);
-
-        function processFieldFile(file) {
-            fieldUploadSection.style.display = 'none';
-            fieldProcessing.style.display = 'block';
-
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                try {
-                    fieldData = parseFieldData(e.target.result);
-                    displayFieldResults();
-                } catch (error) {
-                    showError('Błąd przetwarzania pliku: ' + error.message, fieldUploadSection, fieldProcessing);
-                }
-            };
-            reader.readAsText(file);
-        }
+        setupDropZone(fieldDropZone, fieldFileInput, processFile);
 
         function hoursBetween(start, end) {
             return (end - start) / (1000 * 60 * 60);
@@ -1871,7 +1871,7 @@
         document.getElementById('field-downloadDetailedBtn').addEventListener('click', () => {
             downloadCSV(generateFieldDetailedCSV(), 'raport_szczegolowy_pracownicy_fizyczni.csv');
         });
-        document.getElementById('field-resetBtn').addEventListener('click', resetFieldView);
+        document.getElementById('field-resetBtn').addEventListener('click', resetView);
     </script>
 </body>
 </html>
