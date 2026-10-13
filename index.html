@@ -962,16 +962,17 @@
                     const department = parts[2].trim();
                     const timeStr = parts[3].trim();
 
-                    // Parse the date and time - handle format "MM-DD-YYYY HH:MM:SS"
-                    const timeMatch = timeStr.match(/(\d{2})-(\d{2})-(\d{4})\s+(\d{2}):(\d{2}):(\d{2})/);
-                    
+                    // Parse the date and time - handle formats "MM-DD-YYYY HH:MM:SS" and "DD/MM/YYYY HH:MM:SS"
+                    const timeMatch = timeStr.match(/(\d{2})([-\/])(\d{2})\2(\d{4})\s+(\d{2}):(\d{2}):(\d{2})/);
+
                     if (timeMatch) {
-                        const month = parseInt(timeMatch[1]);
-                        const day = parseInt(timeMatch[2]);
-                        const year = parseInt(timeMatch[3]);
-                        const hours = parseInt(timeMatch[4]);
-                        const minutes = parseInt(timeMatch[5]);
-                        const seconds = parseInt(timeMatch[6]);
+                        const isDayFirst = timeMatch[2] === '/';
+                        const month = parseInt(isDayFirst ? timeMatch[3] : timeMatch[1]);
+                        const day = parseInt(isDayFirst ? timeMatch[1] : timeMatch[3]);
+                        const year = parseInt(timeMatch[4]);
+                        const hours = parseInt(timeMatch[5]);
+                        const minutes = parseInt(timeMatch[6]);
+                        const seconds = parseInt(timeMatch[7]);
 
                         const timestamp = new Date(year, month - 1, day, hours, minutes, seconds);
                         const dateKey = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
