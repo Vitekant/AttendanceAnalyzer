@@ -45,6 +45,44 @@
             font-size: 1.1em;
         }
 
+        .tabs {
+            display: flex;
+            background: #f0f4ff;
+            border-bottom: 1px solid #e0e5f0;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 16px;
+            border: none;
+            border-bottom: 3px solid transparent;
+            background: transparent;
+            font-size: 1em;
+            font-weight: 600;
+            color: #666;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .tab-btn:hover {
+            color: #533483;
+            background: #e8edff;
+        }
+
+        .tab-btn.active {
+            color: #533483;
+            border-bottom-color: #533483;
+            background: white;
+        }
+
+        .tab-panel {
+            display: none;
+        }
+
+        .tab-panel.active {
+            display: block;
+        }
+
         .content {
             padding: 30px;
         }
@@ -179,6 +217,8 @@
         .legend-square.yellow { background: linear-gradient(135deg, #fff3cd 0%, #ffeeba 100%); border-color: #ffc107; }
         .legend-square.red { background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%); border-color: #dc3545; }
         .legend-square.gray { background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%); border-color: #6c757d; }
+        .legend-square.invalid { background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%); border-color: #721c24; }
+        .legend-square.weekend { background: white; border-color: #0f3460; }
 
         .legend-square::after {
             content: attr(data-tooltip);
@@ -251,6 +291,8 @@
         .legend-color.yellow { background: linear-gradient(135deg, #fff3cd 0%, #ffeeba 100%); }
         .legend-color.red { background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%); }
         .legend-color.gray { background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%); }
+        .legend-color.invalid { background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%); border: 2px solid #721c24; }
+        .legend-color.weekend { background: white; border: 2px solid #0f3460; }
 
         .work-hours-info {
             font-size: 0.9em;
@@ -311,7 +353,7 @@
             display: table-row;
         }
 
-        .detail-row td {
+        .detail-row > td {
             padding: 0 !important;
             border-bottom: 2px solid #ddd;
         }
@@ -356,8 +398,19 @@
             background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
         }
 
-        .detail-table tr.status-gray {
+        .detail-table tr.status-gray,
+        .detail-table tr.status-invalid {
             background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+        }
+
+        .detail-table td:first-child,
+        .punch-list {
+            white-space: nowrap;
+        }
+
+        .field-detail-table th,
+        .field-detail-table td {
+            padding: 10px;
         }
 
         .inferred-time {
@@ -392,6 +445,16 @@
 
         .status-badge.gray {
             background: #6c757d;
+            color: white;
+        }
+
+        .status-badge.invalid {
+            background: #721c24;
+            color: white;
+        }
+
+        .status-badge.weekend {
+            background: #0f3460;
             color: white;
         }
 
@@ -551,6 +614,11 @@
             border: 1px solid #dc3545;
         }
 
+        .stat-card.gray {
+            background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+            border: 1px solid #6c757d;
+        }
+
         .stat-card .stat-value {
             font-size: 2em;
             font-weight: 700;
@@ -617,7 +685,13 @@
             <p>Przeciągnij plik z logami obecności i sprawdź szczegóły</p>
         </div>
 
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="office" onclick="switchTab('office')">🏢 Pracownicy biurowi</button>
+            <button class="tab-btn" data-tab="field" onclick="switchTab('field')">🚚 Pracownicy fizyczni</button>
+        </div>
+
         <div class="content">
+          <div class="tab-panel active" id="tab-office">
             <div id="upload-section">
                 <div class="drop-zone" id="dropZone">
                     <i>📁</i>
@@ -649,6 +723,7 @@
             </div>
 
             <div class="results" id="results">
+                <div id="loadedFile" class="work-hours-info"></div>
                 <div id="summaryStats" class="summary-stats"></div>
 
                 <div id="resultsContainer"></div>
@@ -707,6 +782,93 @@
                     <button class="reset-btn" id="resetBtn">🔄 Analizuj nowy plik</button>
                 </div>
             </div>
+          </div>
+
+          <div class="tab-panel" id="tab-field">
+            <div id="field-upload-section">
+                <div class="drop-zone" id="field-dropZone">
+                    <i>🚚</i>
+                    <h3>Przeciągnij plik z logami pracowników fizycznych tutaj</h3>
+                    <p>lub kliknij, żeby wybrać plik (.txt, .csv, .tsv)</p>
+                </div>
+                <input type="file" id="field-fileInput" class="file-input" accept=".txt,.csv,.tsv">
+
+                <div class="work-hours-info" style="margin-top: 25px; margin-bottom: 0;">
+                    <strong>Oczekiwane 4 odbicia dziennie:</strong>
+                    przyjazd na bazę → wyjazd z bazy → powrót na bazę → wyjście<br>
+                    <strong>Wymagany czas pracy:</strong> Poniedziałek-Piątek: 10h
+                </div>
+            </div>
+
+            <div class="processing" id="field-processing">
+                <div class="spinner"></div>
+                <p>Przetwarzanie danych...</p>
+            </div>
+
+            <div class="results" id="field-results">
+                <div id="field-loadedFile" class="work-hours-info"></div>
+                <div id="field-summaryStats" class="summary-stats"></div>
+
+                <div id="field-resultsContainer"></div>
+
+                <div class="legend" id="field-legend" onclick="toggleLegend('field-legend')">
+                    <div class="legend-header">
+                        <div class="legend-title">
+                            <span class="legend-expand-icon">▼</span>
+                            Legenda kolorów
+                        </div>
+                        <div class="legend-squares">
+                            <div class="legend-square green" data-tooltip="OK - Pełny czas pracy"></div>
+                            <div class="legend-square yellow" data-tooltip="Prawie - Lekki niedobór"></div>
+                            <div class="legend-square red" data-tooltip="Za mało - Niedobór"></div>
+                            <div class="legend-square gray" data-tooltip="Niekompletne - Brak części odbić"></div>
+                            <div class="legend-square invalid" data-tooltip="Błąd - Pojedyncze odbicie"></div>
+                            <div class="legend-square weekend" data-tooltip="Weekend"></div>
+                        </div>
+                    </div>
+                    <div class="legend-details">
+                        <div class="work-hours-info" style="width: 100%; margin-bottom: 10px;">
+                            <strong>Wymagany czas pracy:</strong> Poniedziałek-Piątek: 10h<br>
+                            <strong>Odbicia:</strong> 1. przyjazd na bazę → 2. wyjazd z bazy (pakowanie) →
+                            3. powrót na bazę (praca w terenie) → 4. wyjście (rozpakowanie)
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color green"></div>
+                            <span><strong>OK</strong> - Pełny czas (≥10h)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color yellow"></div>
+                            <span><strong>Prawie</strong> - Lekki niedobór (9.5-10h)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color red"></div>
+                            <span><strong>Za mało</strong> - Niedobór (&lt;9.5h)</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color gray"></div>
+                            <span><strong>Niekompletne</strong> - 3 lub więcej niż 4 odbicia, czas liczony od pierwszego do ostatniego</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color invalid"></div>
+                            <span><strong>Błąd</strong> - Tylko jedno odbicie, dzień nie jest liczony</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color weekend"></div>
+                            <span><strong>Weekend</strong> - Brak wymaganego czasu pracy</span>
+                        </div>
+                        <div class="legend-item">
+                            <span>Przy 2 odbiciach pokazywany jest tylko łączny czas pracy, bez podziału na etapy.</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button class="download-btn" id="field-downloadBtn">📥 Pobierz raport CSV</button>
+                    <button class="download-btn" id="field-downloadDetailedBtn">📥 Pobierz szczegółowy raport CSV</button>
+                    <button class="reset-btn" id="field-resetBtn">🔄 Analizuj nowy plik</button>
+                </div>
+            </div>
+          </div>
         </div>
     </div>
 
@@ -719,48 +881,73 @@
         const processing = document.getElementById('processing');
         const results = document.getElementById('results');
 
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.tab === tab);
+            });
+            document.querySelectorAll('.tab-panel').forEach(panel => {
+                panel.classList.toggle('active', panel.id === `tab-${tab}`);
+            });
+        }
+
         // Drag and drop handlers
-        dropZone.addEventListener('click', () => fileInput.click());
-        
-        dropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropZone.classList.add('dragover');
-        });
+        function setupDropZone(zone, input, onFile) {
+            zone.addEventListener('click', () => input.click());
 
-        dropZone.addEventListener('dragleave', () => {
-            dropZone.classList.remove('dragover');
-        });
+            zone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                zone.classList.add('dragover');
+            });
 
-        dropZone.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropZone.classList.remove('dragover');
-            const file = e.dataTransfer.files[0];
-            if (file) processFile(file);
-        });
+            zone.addEventListener('dragleave', () => {
+                zone.classList.remove('dragover');
+            });
 
-        fileInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) processFile(file);
-        });
+            zone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                zone.classList.remove('dragover');
+                const file = e.dataTransfer.files[0];
+                if (file) onFile(file);
+            });
 
+            input.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) onFile(file);
+            });
+        }
+
+        setupDropZone(dropZone, fileInput, processFile);
+
+        // A loaded file is shared by both tabs - each tab only calculates it differently
         function processFile(file) {
             uploadSection.style.display = 'none';
             processing.style.display = 'block';
+            fieldUploadSection.style.display = 'none';
+            fieldProcessing.style.display = 'block';
 
             const reader = new FileReader();
             reader.onload = (e) => {
                 try {
                     const content = e.target.result;
                     processedData = parseAttendanceData(content);
+                    fieldData = parseFieldData(content);
+
+                    const fileLabel = `📄 Plik: ${file.name}`;
+                    document.getElementById('loadedFile').textContent = fileLabel;
+                    document.getElementById('field-loadedFile').textContent = fileLabel;
+
                     displayResults();
+                    displayFieldResults();
                 } catch (error) {
                     showError('Błąd przetwarzania pliku: ' + error.message);
+                    showError('Błąd przetwarzania pliku: ' + error.message, fieldUploadSection, fieldProcessing);
                 }
             };
             reader.readAsText(file);
         }
 
-        function parseAttendanceData(content) {
+        // Groups raw punches by user name and date
+        function parsePunches(content) {
             const lines = content.trim().split('\n');
             const users = {};
 
@@ -781,16 +968,17 @@
                     const department = parts[2].trim();
                     const timeStr = parts[3].trim();
 
-                    // Parse the date and time - handle format "MM-DD-YYYY HH:MM:SS"
-                    const timeMatch = timeStr.match(/(\d{2})-(\d{2})-(\d{4})\s+(\d{2}):(\d{2}):(\d{2})/);
-                    
+                    // Parse the date and time - handle formats "MM-DD-YYYY HH:MM:SS" and "DD/MM/YYYY HH:MM:SS"
+                    const timeMatch = timeStr.match(/(\d{2})([-\/])(\d{2})\2(\d{4})\s+(\d{2}):(\d{2}):(\d{2})/);
+
                     if (timeMatch) {
-                        const month = parseInt(timeMatch[1]);
-                        const day = parseInt(timeMatch[2]);
-                        const year = parseInt(timeMatch[3]);
-                        const hours = parseInt(timeMatch[4]);
-                        const minutes = parseInt(timeMatch[5]);
-                        const seconds = parseInt(timeMatch[6]);
+                        const isDayFirst = timeMatch[2] === '/';
+                        const month = parseInt(isDayFirst ? timeMatch[3] : timeMatch[1]);
+                        const day = parseInt(isDayFirst ? timeMatch[1] : timeMatch[3]);
+                        const year = parseInt(timeMatch[4]);
+                        const hours = parseInt(timeMatch[5]);
+                        const minutes = parseInt(timeMatch[6]);
+                        const seconds = parseInt(timeMatch[7]);
 
                         const timestamp = new Date(year, month - 1, day, hours, minutes, seconds);
                         const dateKey = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
@@ -814,6 +1002,12 @@
                     }
                 }
             }
+
+            return users;
+        }
+
+        function parseAttendanceData(content) {
+            const users = parsePunches(content);
 
             // Calculate daily hours and totals for each user
             for (const userName in users) {
@@ -942,6 +1136,11 @@
         function displayResults() {
             processing.style.display = 'none';
             results.style.display = 'block';
+
+            // Start with the single-entry handling chosen before upload
+            const initialOption = document.querySelector('input[name="singleEntry"]:checked').value;
+            document.querySelector(`input[name="resultsSingleEntry"][value="${initialOption}"]`).checked = true;
+
             updateResults();
         }
 
@@ -951,10 +1150,10 @@
             const statsContainer = document.getElementById('summaryStats');
             
             // Collapse all expanded rows when switching modes
-            document.querySelectorAll('.detail-row.expanded').forEach(row => {
+            document.querySelectorAll('#tab-office .detail-row.expanded').forEach(row => {
                 row.classList.remove('expanded');
             });
-            document.querySelectorAll('.expand-icon.expanded').forEach(icon => {
+            document.querySelectorAll('#tab-office .expand-icon.expanded').forEach(icon => {
                 icon.classList.remove('expanded');
             });
             
@@ -1200,14 +1399,14 @@
         function generateCSV(type) {
             const users = Object.values(processedData).sort((a, b) => a.name.localeCompare(b.name));
             
-            let csv = 'Imię,Dni pracy,Suma godzin,Średnia/dzień,Dni OK,Dni prawie,Dni niedobór\n';
-            
+            let csv = csvRow(['Imię', 'Dni pracy', 'Suma godzin', 'Średnia/dzień', 'Dni OK', 'Dni prawie', 'Dni niedobór']);
+
             users.forEach(user => {
                 const totalHours = type === 'exclude' ? user.totalHours_exclude : user.totalHours_assume8;
                 const daysWorked = type === 'exclude' ? user.daysWorked_exclude : user.daysWorked_assume8;
                 const avgHours = type === 'exclude' ? user.avgHours_exclude : user.avgHours_assume8;
-                
-                csv += `${capitalizeFirst(user.name)},${daysWorked},${formatHoursToHHMM(totalHours)},${formatHoursToHHMM(avgHours)},${user.greenDays},${user.yellowDays},${user.redDays}\n`;
+
+                csv += csvRow([capitalizeFirst(user.name), daysWorked, formatHoursToHHMM(totalHours), formatHoursToHHMM(avgHours), user.greenDays, user.yellowDays, user.redDays]);
             });
             
             return csv;
@@ -1216,20 +1415,28 @@
         function generateDetailedCSV(type) {
             const users = Object.values(processedData).sort((a, b) => a.name.localeCompare(b.name));
             
-            let csv = 'Imię,Data,Dzień,Wejście,Wyjście,Czas pracy,Wymagane,Status\n';
-            
+            let csv = csvRow(['Imię', 'Data', 'Dzień', 'Wejście', 'Wyjście', 'Czas pracy', 'Wymagane', 'Status']);
+
             users.forEach(user => {
-                const dailyHours = type === 'exclude' 
+                const dailyHours = type === 'exclude'
                     ? user.dailyHours.filter(day => day.type === 'calculated')
                     : user.dailyHours;
-                
+
                 dailyHours.forEach(day => {
                     const expectedHours = getExpectedHours(day.dayOfWeek);
-                    csv += `${capitalizeFirst(user.name)},${formatDatePL(day.date)},${day.dayName},${formatTime(day.firstEntry)},${day.type === 'assumed' ? 'brak' : formatTime(day.lastEntry)},${formatHoursToHHMM(day.hours)},${formatHoursToHHMM(expectedHours)},${getStatusText(day.status)}\n`;
+                    csv += csvRow([capitalizeFirst(user.name), formatDatePL(day.date), day.dayName, formatTime(day.firstEntry), day.type === 'assumed' ? 'brak' : formatTime(day.lastEntry), formatHoursToHHMM(day.hours), formatHoursToHHMM(expectedHours), getStatusText(day.status)]);
                 });
             });
-            
+
             return csv;
+        }
+
+        // Quotes values containing separators so Excel keeps columns intact
+        function csvRow(values) {
+            return values.map(value => {
+                const str = String(value);
+                return /[",\r\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
+            }).join(',') + '\n';
         }
 
         function downloadCurrentReport() {
@@ -1265,19 +1472,19 @@
             document.body.removeChild(a);
         }
 
-        function toggleLegend() {
-            const legend = document.getElementById('legend');
+        function toggleLegend(legendId = 'legend') {
+            const legend = document.getElementById(legendId);
             legend.classList.toggle('expanded');
         }
 
-        function showError(message) {
-            processing.style.display = 'none';
-            uploadSection.style.display = 'block';
-            
+        function showError(message, uploadEl = uploadSection, processingEl = processing) {
+            processingEl.style.display = 'none';
+            uploadEl.style.display = 'block';
+
             const errorDiv = document.createElement('div');
             errorDiv.className = 'error';
             errorDiv.textContent = message;
-            uploadSection.appendChild(errorDiv);
+            uploadEl.appendChild(errorDiv);
             
             setTimeout(() => errorDiv.remove(), 5000);
         }
@@ -1290,18 +1497,386 @@
             processedData = null;
             
             // Collapse all expanded rows
-            document.querySelectorAll('.detail-row.expanded').forEach(row => {
+            document.querySelectorAll('#tab-office .detail-row.expanded').forEach(row => {
                 row.classList.remove('expanded');
             });
-            document.querySelectorAll('.expand-icon.expanded').forEach(icon => {
+            document.querySelectorAll('#tab-office .expand-icon.expanded').forEach(icon => {
                 icon.classList.remove('expanded');
             });
+
+            // The file is shared, so the field tab is cleared too
+            resetFieldView();
         }
 
         // Event listeners for buttons
         document.getElementById('downloadBtn').addEventListener('click', downloadCurrentReport);
         document.getElementById('downloadDetailedBtn').addEventListener('click', downloadDetailedReport);
         document.getElementById('resetBtn').addEventListener('click', resetView);
+
+        // ===== Field workers tab =====
+        // Expected punches: arrival at base -> leaving base (packing done) ->
+        // return to base (field work done) -> leaving (unpacking done)
+        const FIELD_REQUIRED_HOURS = 10;
+
+        let fieldData = null;
+
+        const fieldDropZone = document.getElementById('field-dropZone');
+        const fieldFileInput = document.getElementById('field-fileInput');
+        const fieldUploadSection = document.getElementById('field-upload-section');
+        const fieldProcessing = document.getElementById('field-processing');
+        const fieldResults = document.getElementById('field-results');
+
+        setupDropZone(fieldDropZone, fieldFileInput, processFile);
+
+        function hoursBetween(start, end) {
+            return (end - start) / (1000 * 60 * 60);
+        }
+
+        function parseFieldData(content) {
+            const users = parsePunches(content);
+
+            for (const userName in users) {
+                const user = users[userName];
+                user.dailyHours = [];
+                user.totalHours = 0;
+                user.packingHours = 0;
+                user.fieldHours = 0;
+                user.unpackingHours = 0;
+                user.daysWorked = 0;
+                user.greenDays = 0;
+                user.yellowDays = 0;
+                user.redDays = 0;
+                user.flaggedDays = 0;
+
+                const sortedDates = Object.keys(user.days).sort();
+
+                for (const dateKey of sortedDates) {
+                    const entries = user.days[dateKey].entries.sort((a, b) => a - b);
+                    const dayOfWeek = entries[0].getDay();
+
+                    let dayInfo = {
+                        date: dateKey,
+                        dayOfWeek: dayOfWeek,
+                        dayName: getDayName(dayOfWeek),
+                        entries: entries,
+                        hours: null,
+                        packing: null,
+                        field: null,
+                        unpacking: null
+                    };
+
+                    if (entries.length === 1) {
+                        // Single punch - nothing can be calculated
+                        dayInfo.type = 'error';
+                        dayInfo.status = 'invalid';
+                        user.flaggedDays++;
+                    } else {
+                        dayInfo.hours = hoursBetween(entries[0], entries[entries.length - 1]);
+
+                        if (entries.length === 4) {
+                            dayInfo.type = 'full';
+                            dayInfo.packing = hoursBetween(entries[0], entries[1]);
+                            dayInfo.field = hoursBetween(entries[1], entries[2]);
+                            dayInfo.unpacking = hoursBetween(entries[2], entries[3]);
+                            user.packingHours += dayInfo.packing;
+                            user.fieldHours += dayInfo.field;
+                            user.unpackingHours += dayInfo.unpacking;
+                        } else if (entries.length === 2) {
+                            // Only start and end - total time without phase breakdown
+                            dayInfo.type = 'total';
+                        } else {
+                            // 3 or 5+ punches - phases can't be assigned reliably
+                            dayInfo.type = 'incomplete';
+                        }
+
+                        dayInfo.status = dayInfo.type === 'incomplete'
+                            ? 'gray'
+                            : getFieldHoursStatus(dayInfo.hours, dayOfWeek);
+
+                        user.totalHours += dayInfo.hours;
+                        user.daysWorked++;
+
+                        if (dayInfo.status === 'green') user.greenDays++;
+                        else if (dayInfo.status === 'yellow') user.yellowDays++;
+                        else if (dayInfo.status === 'red') user.redDays++;
+                        else if (dayInfo.status === 'gray') user.flaggedDays++;
+                    }
+
+                    user.dailyHours.push(dayInfo);
+                }
+
+                user.avgHours = user.daysWorked > 0 ? user.totalHours / user.daysWorked : 0;
+            }
+
+            return users;
+        }
+
+        function getFieldExpectedHours(dayOfWeek) {
+            // Mon-Fri = 10h, weekend = no requirement
+            return dayOfWeek >= 1 && dayOfWeek <= 5 ? FIELD_REQUIRED_HOURS : 0;
+        }
+
+        function getFieldHoursStatus(hours, dayOfWeek) {
+            if (getFieldExpectedHours(dayOfWeek) === 0) return 'weekend';
+
+            // Round to 2 decimal places to avoid floating point issues
+            const roundedHours = Math.round(hours * 100) / 100;
+
+            if (roundedHours >= FIELD_REQUIRED_HOURS) return 'green';
+            if (roundedHours >= FIELD_REQUIRED_HOURS - 0.5) return 'yellow';
+            return 'red';
+        }
+
+        function getFieldStatusText(status) {
+            switch (status) {
+                case 'gray': return 'Niekompletne';
+                case 'invalid': return 'Błąd';
+                case 'weekend': return 'Weekend';
+                default: return getStatusText(status);
+            }
+        }
+
+        function getFieldDayNote(day) {
+            switch (day.type) {
+                case 'error': return 'Tylko jedno odbicie';
+                case 'incomplete': return `${day.entries.length} ${pluralPunches(day.entries.length)} zamiast 4`;
+                case 'total': return '2 odbicia - brak podziału na etapy';
+                default: return '';
+            }
+        }
+
+        function pluralPunches(count) {
+            const lastDigit = count % 10;
+            const lastTwoDigits = count % 100;
+            if (count === 1) return 'odbicie';
+            if (lastDigit >= 2 && lastDigit <= 4 && (lastTwoDigits < 12 || lastTwoDigits > 14)) return 'odbicia';
+            return 'odbić';
+        }
+
+        function formatOptionalHours(hours) {
+            return hours === null ? '—' : formatHoursToHHMM(hours);
+        }
+
+        function formatPunches(entries) {
+            return entries.map(formatTime).join(' → ');
+        }
+
+        function displayFieldResults() {
+            fieldProcessing.style.display = 'none';
+            fieldResults.style.display = 'block';
+
+            let totalGreen = 0, totalYellow = 0, totalRed = 0, totalFlagged = 0;
+            Object.values(fieldData).forEach(user => {
+                totalGreen += user.greenDays;
+                totalYellow += user.yellowDays;
+                totalRed += user.redDays;
+                totalFlagged += user.flaggedDays;
+            });
+
+            document.getElementById('field-summaryStats').innerHTML = `
+                <div class="stat-card green">
+                    <div class="stat-value">${totalGreen}</div>
+                    <div class="stat-label">dni z pełnym czasem</div>
+                </div>
+                <div class="stat-card yellow">
+                    <div class="stat-value">${totalYellow}</div>
+                    <div class="stat-label">dni z lekkim niedoborem</div>
+                </div>
+                <div class="stat-card red">
+                    <div class="stat-value">${totalRed}</div>
+                    <div class="stat-label">dni z niedoborem</div>
+                </div>
+                <div class="stat-card gray">
+                    <div class="stat-value">${totalFlagged}</div>
+                    <div class="stat-label">dni z błędnymi odbiciami</div>
+                </div>
+            `;
+
+            document.getElementById('field-resultsContainer').innerHTML = `
+                <h4 style="margin-bottom: 15px; color: #333;">Wyniki: Pracownicy fizyczni</h4>
+                <p style="color: #666; margin-bottom: 15px; font-size: 0.9em;">
+                    Kliknij na pracownika, żeby zobaczyć szczegóły każdego dnia.
+                    Pakowanie, teren i rozpakowanie są sumowane tylko z dni z 4 odbiciami.
+                </p>
+                ${createFieldSummaryTable(fieldData)}
+            `;
+        }
+
+        function createFieldSummaryTable(data) {
+            const users = Object.values(data).sort((a, b) => a.name.localeCompare(b.name));
+
+            let tableHTML = `
+                <div class="table-wrapper">
+                <table class="summary-table">
+                    <thead>
+                        <tr>
+                            <th>Imię</th>
+                            <th>Dni</th>
+                            <th>Pakowanie</th>
+                            <th>Teren</th>
+                            <th>Rozpakowanie</th>
+                            <th>Suma godzin</th>
+                            <th>Średnia/dzień</th>
+                            <th style="text-align: center;">🟢</th>
+                            <th style="text-align: center;">🟡</th>
+                            <th style="text-align: center;">🔴</th>
+                            <th style="text-align: center;">⚠️</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            users.forEach((user) => {
+                const safeUserName = user.name.replace(/'/g, "\\'");
+
+                tableHTML += `
+                    <tr class="clickable" onclick="toggleFieldDetails('${safeUserName}')">
+                        <td>
+                            <span class="expand-icon" id="field-icon-${user.name}">▶</span>
+                            <strong>${capitalizeFirst(user.name)}</strong>
+                        </td>
+                        <td>${user.daysWorked}</td>
+                        <td>${formatHoursToHHMM(user.packingHours)}</td>
+                        <td>${formatHoursToHHMM(user.fieldHours)}</td>
+                        <td>${formatHoursToHHMM(user.unpackingHours)}</td>
+                        <td><strong>${formatHoursToHHMM(user.totalHours)}</strong></td>
+                        <td>${formatHoursToHHMM(user.avgHours)}</td>
+                        <td style="text-align: center;">${user.greenDays}</td>
+                        <td style="text-align: center;">${user.yellowDays}</td>
+                        <td style="text-align: center;">${user.redDays}</td>
+                        <td style="text-align: center;">${user.flaggedDays}</td>
+                    </tr>
+                    <tr class="detail-row" id="field-detail-${user.name}">
+                        <td colspan="11" id="field-detail-content-${user.name}"></td>
+                    </tr>
+                `;
+            });
+
+            tableHTML += '</tbody></table></div>';
+            return tableHTML;
+        }
+
+        function toggleFieldDetails(userName) {
+            const detailRow = document.getElementById(`field-detail-${userName}`);
+            const icon = document.getElementById(`field-icon-${userName}`);
+            const contentCell = document.getElementById(`field-detail-content-${userName}`);
+
+            if (detailRow.classList.contains('expanded')) {
+                detailRow.classList.remove('expanded');
+                icon.classList.remove('expanded');
+                contentCell.innerHTML = '';
+            } else {
+                detailRow.classList.add('expanded');
+                icon.classList.add('expanded');
+                contentCell.innerHTML = createFieldDailyDetailsTable(fieldData[userName]);
+            }
+        }
+
+        function createFieldDailyDetailsTable(user) {
+            let detailHTML = `
+                <div class="detail-content">
+                    <h5 style="margin-bottom: 15px; color: #333;">
+                        📅 Szczegóły obecności: <strong>${capitalizeFirst(user.name)}</strong>
+                    </h5>
+                    <div class="table-wrapper">
+                    <table class="detail-table field-detail-table">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Odbicia</th>
+                                <th>Pakowanie</th>
+                                <th>Teren</th>
+                                <th>Rozpakowanie</th>
+                                <th>Czas pracy</th>
+                                <th>Wymagane</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            user.dailyHours.forEach(day => {
+                const expectedHours = getFieldExpectedHours(day.dayOfWeek);
+                const note = getFieldDayNote(day);
+
+                let diffHTML = '';
+                if (['green', 'yellow', 'red'].includes(day.status)) {
+                    const diff = day.hours - expectedHours;
+                    diffHTML = `<br><small>${diff >= 0 ? '+' : '-'}${formatHoursToHHMM(Math.abs(diff))}</small>`;
+                }
+
+                detailHTML += `
+                    <tr class="status-${day.status}">
+                        <td><strong>${formatDatePL(day.date)}</strong><br><small>${day.dayName}</small></td>
+                        <td>
+                            <span class="punch-list">${formatPunches(day.entries)}</span>
+                            ${note ? `<br><small>${note}</small>` : ''}
+                        </td>
+                        <td>${formatOptionalHours(day.packing)}</td>
+                        <td>${formatOptionalHours(day.field)}</td>
+                        <td>${formatOptionalHours(day.unpacking)}</td>
+                        <td><span class="hours-display">${formatOptionalHours(day.hours)}</span></td>
+                        <td><span class="expected-hours">${expectedHours ? formatHoursToHHMM(expectedHours) : '—'}</span></td>
+                        <td>
+                            <span class="status-badge ${day.status}">${getFieldStatusText(day.status)}</span>
+                            ${diffHTML}
+                        </td>
+                    </tr>
+                `;
+            });
+
+            detailHTML += `
+                        </tbody>
+                    </table>
+                    </div>
+                </div>
+            `;
+
+            return detailHTML;
+        }
+
+        function generateFieldCSV() {
+            const users = Object.values(fieldData).sort((a, b) => a.name.localeCompare(b.name));
+
+            let csv = csvRow(['Imię', 'Dni pracy', 'Pakowanie', 'Praca w terenie', 'Rozpakowanie', 'Suma godzin', 'Średnia/dzień', 'Dni OK', 'Dni prawie', 'Dni niedobór', 'Dni z błędnymi odbiciami']);
+
+            users.forEach(user => {
+                csv += csvRow([capitalizeFirst(user.name), user.daysWorked, formatHoursToHHMM(user.packingHours), formatHoursToHHMM(user.fieldHours), formatHoursToHHMM(user.unpackingHours), formatHoursToHHMM(user.totalHours), formatHoursToHHMM(user.avgHours), user.greenDays, user.yellowDays, user.redDays, user.flaggedDays]);
+            });
+
+            return csv;
+        }
+
+        function generateFieldDetailedCSV() {
+            const users = Object.values(fieldData).sort((a, b) => a.name.localeCompare(b.name));
+
+            let csv = csvRow(['Imię', 'Data', 'Dzień', 'Odbicia', 'Pakowanie', 'Praca w terenie', 'Rozpakowanie', 'Czas pracy', 'Wymagane', 'Status', 'Uwagi']);
+
+            users.forEach(user => {
+                user.dailyHours.forEach(day => {
+                    const expectedHours = getFieldExpectedHours(day.dayOfWeek);
+                    csv += csvRow([capitalizeFirst(user.name), formatDatePL(day.date), day.dayName, formatPunches(day.entries), formatOptionalHours(day.packing), formatOptionalHours(day.field), formatOptionalHours(day.unpacking), formatOptionalHours(day.hours), expectedHours ? formatHoursToHHMM(expectedHours) : '—', getFieldStatusText(day.status), getFieldDayNote(day)]);
+                });
+            });
+
+            return csv;
+        }
+
+        function resetFieldView() {
+            fieldUploadSection.style.display = 'block';
+            fieldProcessing.style.display = 'none';
+            fieldResults.style.display = 'none';
+            fieldFileInput.value = '';
+            fieldData = null;
+        }
+
+        document.getElementById('field-downloadBtn').addEventListener('click', () => {
+            downloadCSV(generateFieldCSV(), 'raport_pracownicy_fizyczni.csv');
+        });
+        document.getElementById('field-downloadDetailedBtn').addEventListener('click', () => {
+            downloadCSV(generateFieldDetailedCSV(), 'raport_szczegolowy_pracownicy_fizyczni.csv');
+        });
+        document.getElementById('field-resetBtn').addEventListener('click', resetView);
     </script>
 </body>
 </html>
