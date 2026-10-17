@@ -217,7 +217,7 @@
         .legend-square.yellow { background: linear-gradient(135deg, #fff3cd 0%, #ffeeba 100%); border-color: #ffc107; }
         .legend-square.red { background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%); border-color: #dc3545; }
         .legend-square.gray { background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%); border-color: #6c757d; }
-        .legend-square.error { background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%); border-color: #721c24; }
+        .legend-square.invalid { background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%); border-color: #721c24; }
         .legend-square.weekend { background: white; border-color: #0f3460; }
 
         .legend-square::after {
@@ -291,7 +291,7 @@
         .legend-color.yellow { background: linear-gradient(135deg, #fff3cd 0%, #ffeeba 100%); }
         .legend-color.red { background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%); }
         .legend-color.gray { background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%); }
-        .legend-color.error { background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%); border: 2px solid #721c24; }
+        .legend-color.invalid { background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%); border: 2px solid #721c24; }
         .legend-color.weekend { background: white; border: 2px solid #0f3460; }
 
         .work-hours-info {
@@ -353,7 +353,7 @@
             display: table-row;
         }
 
-        .detail-row td {
+        .detail-row > td {
             padding: 0 !important;
             border-bottom: 2px solid #ddd;
         }
@@ -399,12 +399,18 @@
         }
 
         .detail-table tr.status-gray,
-        .detail-table tr.status-error {
+        .detail-table tr.status-invalid {
             background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
         }
 
+        .detail-table td:first-child,
         .punch-list {
             white-space: nowrap;
+        }
+
+        .field-detail-table th,
+        .field-detail-table td {
+            padding: 10px;
         }
 
         .inferred-time {
@@ -442,7 +448,7 @@
             color: white;
         }
 
-        .status-badge.error {
+        .status-badge.invalid {
             background: #721c24;
             color: white;
         }
@@ -816,7 +822,7 @@
                             <div class="legend-square yellow" data-tooltip="Prawie - Lekki niedobór"></div>
                             <div class="legend-square red" data-tooltip="Za mało - Niedobór"></div>
                             <div class="legend-square gray" data-tooltip="Niekompletne - Brak części odbić"></div>
-                            <div class="legend-square error" data-tooltip="Błąd - Pojedyncze odbicie"></div>
+                            <div class="legend-square invalid" data-tooltip="Błąd - Pojedyncze odbicie"></div>
                             <div class="legend-square weekend" data-tooltip="Weekend"></div>
                         </div>
                     </div>
@@ -843,7 +849,7 @@
                             <span><strong>Niekompletne</strong> - 3 lub więcej niż 4 odbicia, czas liczony od pierwszego do ostatniego</span>
                         </div>
                         <div class="legend-item">
-                            <div class="legend-color error"></div>
+                            <div class="legend-color invalid"></div>
                             <span><strong>Błąd</strong> - Tylko jedno odbicie, dzień nie jest liczony</span>
                         </div>
                         <div class="legend-item">
@@ -1562,7 +1568,7 @@
                     if (entries.length === 1) {
                         // Single punch - nothing can be calculated
                         dayInfo.type = 'error';
-                        dayInfo.status = 'error';
+                        dayInfo.status = 'invalid';
                         user.flaggedDays++;
                     } else {
                         dayInfo.hours = hoursBetween(entries[0], entries[entries.length - 1]);
@@ -1624,7 +1630,7 @@
         function getFieldStatusText(status) {
             switch (status) {
                 case 'gray': return 'Niekompletne';
-                case 'error': return 'Błąd';
+                case 'invalid': return 'Błąd';
                 case 'weekend': return 'Weekend';
                 default: return getStatusText(status);
             }
@@ -1773,11 +1779,10 @@
                         📅 Szczegóły obecności: <strong>${capitalizeFirst(user.name)}</strong>
                     </h5>
                     <div class="table-wrapper">
-                    <table class="detail-table">
+                    <table class="detail-table field-detail-table">
                         <thead>
                             <tr>
                                 <th>Data</th>
-                                <th>Dzień</th>
                                 <th>Odbicia</th>
                                 <th>Pakowanie</th>
                                 <th>Teren</th>
@@ -1802,8 +1807,7 @@
 
                 detailHTML += `
                     <tr class="status-${day.status}">
-                        <td><strong>${formatDatePL(day.date)}</strong></td>
-                        <td>${day.dayName}</td>
+                        <td><strong>${formatDatePL(day.date)}</strong><br><small>${day.dayName}</small></td>
                         <td>
                             <span class="punch-list">${formatPunches(day.entries)}</span>
                             ${note ? `<br><small>${note}</small>` : ''}
